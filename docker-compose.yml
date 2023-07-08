@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+  h2o-llm:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      args:
+        BUILDKIT_INLINE_CACHE: "0"
+    image: h2o-llm
+    shm_size: '64gb'
+    command: generate.py --load_4bit True --base_model 'llama' --score_model=None --prompt_type=human_bot
+    restart: unless-stopped
+    volumes:
+      - h2o-llm:/root/.cache # Location downloaded weights will be stored
+    ports:
+      - 7860:7860
+
+volumes:
+  h2o-llm:
+    name: h2o-llm
