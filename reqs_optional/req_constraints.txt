@@ -1,6 +1,6 @@
 datasets==2.12.0
 sentencepiece==0.1.99
-gradio==3.34.0
+gradio==4.11.0
 huggingface_hub==0.15.1
 appdirs==1.4.4
 fire==0.5.0
