@@ -1,7 +1,7 @@
 # for generate (gradio server) and finetune
 datasets==2.13.0
 sentencepiece==0.1.99
-gradio==4.37.1
+gradio==4.37.2
 huggingface_hub==0.15.1
 appdirs==1.4.4
 fire==0.5.0
@@ -58,7 +58,7 @@ instructorembedding==1.0.1
 # for gpt4all .env file, but avoid worrying about imports
 python-dotenv==1.0.0
 
-text-generation==0.6.0
+text-generation==0.7.0
 # for tokenization when don't have HF tokenizer
 tiktoken==0.4.0
 # optional: for OpenAI endpoint or embeddings (requires key)
