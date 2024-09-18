@@ -42,7 +42,7 @@ markdown==3.4.3
 # data and testing
 pytest==7.2.2
 pytest-xdist==3.2.1
-nltk==3.8.1
+nltk==3.9
 textstat==0.7.3
 # pandoc==2.3
 #pypandoc-binary==1.11
