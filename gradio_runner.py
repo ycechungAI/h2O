@@ -1667,8 +1667,19 @@ def go_gradio(**kwargs):
                 files = file
             if not files:
                 return chat_state1, add_btn
-             # Define a secure base directory
-            base_directory = "/secure/chats/directory" 
+            # Define a secure base directory
+              # Get the absolute path of the current file (gradio_runner.py)
+            current_file_path = os.path.abspath(__file__)
+            
+              # Get the root directory of the repository by going to the parent of the current file
+              # This assumes `gradio_runner.py` is located in the root or a subdirectory of your project
+            base_directory = os.path.dirname(current_file_path)
+            
+              # Optionally, you can append a specific subfolder in the repository to store chats
+            base_directory = os.path.join(base_directory, 'chats')
+            
+              # Ensure the directory exists
+            os.makedirs(base_directory, exist_ok=True) 
             for file1 in files:
                 try:
                     # If file1 is a file object, extract the file name
