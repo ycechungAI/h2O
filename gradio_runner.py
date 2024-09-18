@@ -20,6 +20,7 @@ from iterators import TimeoutIterator
 
 from gradio_utils.css import get_css
 from gradio_utils.prompt_form import make_prompt_form, make_chatbots
+from werkzeug.utils import secure_filename  # Add this import for secure filenames
 
 # This is a hack to prevent Gradio from phoning home when it gets imported
 os.environ['GRADIO_ANALYTICS_ENABLED'] = 'False'
@@ -1666,10 +1667,23 @@ def go_gradio(**kwargs):
                 files = file
             if not files:
                 return chat_state1, add_btn
+             # Define a secure base directory
+            base_directory = "/secure/chats/directory" 
             for file1 in files:
                 try:
+                    # If file1 is a file object, extract the file name
                     if hasattr(file1, 'name'):
                         file1 = file1.name
+                     # Sanitize the file name
+                    file1 = secure_filename(file1)
+
+                    # Construct the full, normalized file path
+                    full_path = os.path.normpath(os.path.join(base_directory, file1))
+        
+                    # Ensure the full path is within the secure base directory
+                    if not full_path.startswith(base_directory):
+                        raise ValueError("Attempted to access an invalid file path.")
+                        
                     with open(file1, "rt") as f:
                         new_chats = json.loads(f.read())
                         for chat1_k, chat1_v in new_chats.items():
