@@ -124,7 +124,11 @@ cd h2ogpt
 # fix any bad env
 pip uninstall -y pandoc pypandoc pypandoc-binary
 # broad support, but no training-time or data creation dependencies
-for fil in requirements.txt reqs_optional/requirements_optional_langchain.txt reqs_optional/requirements_optional_gpt4all.txt reqs_optional/requirements_optional_langchain.gpllike.txt reqs_optional/requirements_optional_langchain.urls.txt ; do pip install -r $fil ; done
+pip install -r requirements.txt
+pip install -r reqs_optional/requirements_optional_langchain.txt
+pip install -r reqs_optional/requirements_optional_gpt4all.txt
+pip install -r reqs_optional/requirements_optional_langchain.gpllike.txt
+pip install -r reqs_optional/requirements_optional_langchain.urls.txt
 # Optional: support docx, pptx, ArXiv, etc.
 sudo apt-get install -y libmagic-dev poppler-utils tesseract-ocr libreoffice
 # Optional: for supporting unstructured package
@@ -149,7 +153,7 @@ For help installing cuda toolkit, see [CUDA Toolkit](docs/INSTALL.md#installing-
 ```bash
 git clone https://github.com/h2oai/h2ogpt.git
 cd h2ogpt
-pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu117
+pip install -r requirements.txt
 python generate.py --base_model=h2oai/h2ogpt-oig-oasst1-512-6_9b --load_8bit=True
 ```
 Then point browser at http://0.0.0.0:7860 (linux) or http://localhost:7860 (windows/mac) or the public live URL printed by the server (disable shared link with `--share=False`).  For 4-bit or 8-bit support, older GPUs may require older bitsandbytes installed as `pip uninstall bitsandbytes -y ; pip install bitsandbytes==0.38.1`.  For production uses, we recommend at least the 12B model, ran as:
@@ -193,7 +197,7 @@ CPU support is obtained after installing two optional requirements.txt files.  T
 ```bash
 git clone https://github.com/h2oai/h2ogpt.git
 cd h2ogpt
-pip install -r requirements.txt  # only do if didn't already do for GPU support, since windows needs --extra-index-url line
+pip install -r requirements.txt
 pip install -r reqs_optional/requirements_optional_langchain.txt
 python -m nltk.downloader all  # for supporting unstructured package
 pip install -r reqs_optional/requirements_optional_gpt4all.txt
@@ -280,7 +284,6 @@ Follow these steps, which includes the above GPU or CPU install step at one poin
 8. Install cuda toolkit from conda: `conda install cudatoolkit -c conda-forge` as required easily make bitsandbytes work
 9. Run: `wsl --install`
 8. Now go back to normal [GPU](README.md#gpu-cuda) or [CPU](README.md#cpu) (most general) installation
-   * IMPORTANT: Run `pip install` with `--extra-index-url https://download.pytorch.org/whl/cu117` as in GPU section
 9. Upgrade to windows GPU version of bitsandbytes if using GPU:
 
 For GPU support of 4-bit and 8-bit, run:
