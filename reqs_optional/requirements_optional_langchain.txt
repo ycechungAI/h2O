@@ -1,6 +1,6 @@
 # optional for chat with PDF
 langchain==0.2.10
-pypdf==6.0.0
+pypdf==6.1.3
 # avoid textract, requires old six
 #textract==1.6.5
 
