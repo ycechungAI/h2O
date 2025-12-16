@@ -19,8 +19,8 @@ from operator import concat
 import filelock
 
 from joblib import delayed
-from langchain.callbacks import streaming_stdout
-from langchain.embeddings import HuggingFaceInstructEmbeddings
+from langchain_core.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from langchain_community.embeddings import HuggingFaceInstructEmbeddings
 from tqdm import tqdm
 
 from enums import DocumentChoices, no_lora_str, model_token_mapping, source_prefix, source_postfix
@@ -35,20 +35,22 @@ import_matplotlib()
 import numpy as np
 import pandas as pd
 import requests
-from langchain.chains.qa_with_sources import load_qa_with_sources_chain
+from langchain_classic.chains.qa_with_sources import load_qa_with_sources_chain
+from langchain_classic.chains.question_answering import load_qa_chain
+from langchain_community.vectorstores import Chroma
+from langchain_core.documents import Document
+from langchain_core.prompts import PromptTemplate
 # , GCSDirectoryLoader, GCSFileLoader
 # , OutlookMessageLoader # GPL3
 # ImageCaptionLoader, # use our own wrapper
 #  ReadTheDocsLoader,  # no special file, some path, so have to give as special option
-from langchain.document_loaders import PyPDFLoader, TextLoader, CSVLoader, PythonLoader, TomlLoader, \
+from langchain_community.document_loaders import PyPDFLoader, TextLoader, CSVLoader, PythonLoader, TomlLoader, \
     UnstructuredURLLoader, UnstructuredHTMLLoader, UnstructuredWordDocumentLoader, UnstructuredMarkdownLoader, \
     EverNoteLoader, UnstructuredEmailLoader, UnstructuredODTLoader, UnstructuredPowerPointLoader, \
     UnstructuredEPubLoader, UnstructuredImageLoader, UnstructuredRTFLoader, ArxivLoader, UnstructuredPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter, Language
-from langchain.chains.question_answering import load_qa_chain
-from langchain.docstore.document import Document
-from langchain import PromptTemplate, HuggingFaceTextGenInference
-from langchain.vectorstores import Chroma
+from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
+from langchain_community.llms import HuggingFaceTextGenInference
+from langchain_core.language_models.llms import LLM
 
 
 def get_db(sources, use_openai_embedding=False, db_type='faiss',
@@ -67,12 +69,12 @@ def get_db(sources, use_openai_embedding=False, db_type='faiss',
 
     # Create vector database
     if db_type == 'faiss':
-        from langchain.vectorstores import FAISS
+        from langchain_community.vectorstores import FAISS
         db = FAISS.from_documents(sources, embedding)
     elif db_type == 'weaviate':
         import weaviate
         from weaviate.embedded import EmbeddedOptions
-        from langchain.vectorstores import Weaviate
+        from langchain_community.vectorstores import Weaviate
 
         if os.getenv('WEAVIATE_URL', None):
             client = _create_local_weaviate_client()
@@ -238,11 +240,11 @@ def get_embedding(use_openai_embedding, hf_embedding_model="sentence-transformer
     # Get embedding model
     if use_openai_embedding:
         assert os.getenv("OPENAI_API_KEY") is not None, "Set ENV OPENAI_API_KEY"
-        from langchain.embeddings import OpenAIEmbeddings
+        from langchain_community.embeddings import OpenAIEmbeddings
         embedding = OpenAIEmbeddings(disallowed_special=())
     else:
         # to ensure can fork without deadlock
-        from langchain.embeddings import HuggingFaceEmbeddings
+        from langchain_community.embeddings import HuggingFaceEmbeddings
 
         device, torch_dtype, context_class = get_device_dtype()
         model_kwargs = dict(device=device)
@@ -270,9 +272,9 @@ def get_answer_from_sources(chain, sources, question):
 from functools import partial
 from typing import Any, Dict, List, Optional, Set
 
-from pydantic import Extra, Field, root_validator
+from pydantic import Extra, Field, model_validator
 
-from langchain.callbacks.manager import CallbackManagerForLLMRun
+from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 
 """Wrapper around Huggingface text generation inference API."""
 from functools import partial
@@ -280,8 +282,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import Extra, Field, root_validator
 
-from langchain.callbacks.manager import CallbackManagerForLLMRun
-from langchain.llms.base import LLM
+from langchain_core.language_models.llms import LLM
 
 
 class GradioInference(LLM):
@@ -313,14 +314,14 @@ class GradioInference(LLM):
     class Config:
         """Configuration for this pydantic object."""
 
-        extra = Extra.forbid
+        extra = 'forbid'
 
-    @root_validator()
+    @model_validator(mode='before')
     def validate_environment(cls, values: Dict) -> Dict:
         """Validate that python package exists in environment."""
 
         try:
-            if values['client'] is None:
+            if values.get('client') is None:
                 import gradio_client
                 values["client"] = gradio_client.Client(
                     values["inference_server_url"]
@@ -455,18 +456,18 @@ class H2OHuggingFaceTextGenInference(HuggingFaceTextGenInference):
     tokenizer: Any = None
     client: Any = None
 
-    @root_validator()
+    @model_validator(mode='before')
     def validate_environment(cls, values: Dict) -> Dict:
         """Validate that python package exists in environment."""
 
         try:
-            if values['client'] is None:
+            if values.get('client') is None:
                 import text_generation
 
                 values["client"] = text_generation.Client(
-                    values["inference_server_url"],
-                    timeout=values["timeout"],
-                    headers=values["headers"],
+                    values.get("inference_server_url"),
+                    timeout=values.get("timeout"),
+                    headers=values.get("headers"),
                 )
         except ImportError:
             raise ImportError(
@@ -558,7 +559,7 @@ class H2OHuggingFaceTextGenInference(HuggingFaceTextGenInference):
         return text
 
 
-from langchain.chat_models import ChatOpenAI
+from langchain_community.chat_models import ChatOpenAI
 
 
 class H2OChatOpenAI(ChatOpenAI):
@@ -596,7 +597,7 @@ def get_llm(use_openai_model=False,
         if use_openai_model and model_name is None:
             model_name = "gpt-3.5-turbo"
         if inference_server == 'openai':
-            from langchain.llms import OpenAI
+            from langchain_community.llms import OpenAI
             cls = OpenAI
         else:
             cls = H2OChatOpenAI
@@ -695,7 +696,7 @@ def get_llm(use_openai_model=False,
         else:
             # stream_output = False
             # doesn't stream properly as generator, but at least
-            callbacks = [streaming_stdout.StreamingStdOutCallbackHandler()]
+            callbacks = [StreamingStdOutCallbackHandler()]
             streamer = None
         if prompter:
             prompt_type = prompter.prompt_type
@@ -767,7 +768,7 @@ def get_llm(use_openai_model=False,
         # not built in prompt removal that is less general and not specific for our model
         pipe.task = "text2text-generation"
 
-        from langchain.llms import HuggingFacePipeline
+        from langchain_community.llms import HuggingFacePipeline
         llm = HuggingFacePipeline(pipeline=pipe)
     return llm, model_name, streamer, prompt_type
 
@@ -1006,12 +1007,12 @@ def file_to_doc(file, base_path=None, verbose=False, fail_any_exception=False,
             docs1 = UnstructuredURLLoader(urls=[file]).load()
             if len(docs1) == 0 and have_playwright:
                 # then something went wrong, try another loader:
-                from langchain.document_loaders import PlaywrightURLLoader
+                from langchain_community.document_loaders import PlaywrightURLLoader
                 docs1 = PlaywrightURLLoader(urls=[file]).load()
             if len(docs1) == 0 and have_selenium:
                 # then something went wrong, try another loader:
                 # but requires Chrome binary, else get: selenium.common.exceptions.WebDriverException: Message: unknown error: cannot find Chrome binary
-                from langchain.document_loaders import SeleniumURLLoader
+                from langchain_community.document_loaders import SeleniumURLLoader
                 from selenium.common.exceptions import WebDriverException
                 try:
                     docs1 = SeleniumURLLoader(urls=[file]).load()
@@ -1135,7 +1136,7 @@ def file_to_doc(file, base_path=None, verbose=False, fail_any_exception=False,
         pdf_class_name = env_kwargs.get('PDF_CLASS_NAME', 'PyMuPDFParser')
         if have_pymupdf and pdf_class_name == 'PyMuPDFParser':
             # GPL, only use if installed
-            from langchain.document_loaders import PyMuPDFLoader
+            from langchain_community.document_loaders import PyMuPDFLoader
             # load() still chunks by pages, but every page has title at start to help
             doc1 = PyMuPDFLoader(file).load()
             doc1 = clean_doc(doc1)
@@ -1396,32 +1397,32 @@ def prep_langchain(persist_directory,
     return db
 
 
-import posthog
-
-posthog.disabled = True
-
-
-class FakeConsumer(object):
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def run(self):
-        pass
-
-    def pause(self):
-        pass
-
-    def upload(self):
-        pass
-
-    def next(self):
-        pass
-
-    def request(self, batch):
-        pass
-
-
-posthog.Consumer = FakeConsumer
+# import posthog
+#
+# posthog.disabled = True
+#
+#
+# class FakeConsumer(object):
+#     def __init__(self, *args, **kwargs):
+#         pass
+#
+#     def run(self):
+#         pass
+#
+#     def pause(self):
+#         pass
+#
+#     def upload(self):
+#         pass
+#
+#     def next(self):
+#         pass
+#
+#     def request(self, batch):
+#         pass
+#
+#
+# posthog.Consumer = FakeConsumer
 
 
 def check_update_chroma_embedding(db, use_openai_embedding, hf_embedding_model, langchain_mode):
@@ -1663,7 +1664,7 @@ def _make_db(use_openai_embedding=False,
 
 
 def get_metadatas(db):
-    from langchain.vectorstores import FAISS
+    from langchain_community.vectorstores import FAISS
     if isinstance(db, FAISS):
         metadatas = [v.metadata for k, v in db.docstore._dict.items()]
     elif isinstance(db, Chroma):
@@ -1688,7 +1689,7 @@ def get_documents(db):
 
 
 def _get_documents(db):
-    from langchain.vectorstores import FAISS
+    from langchain_community.vectorstores import FAISS
     if isinstance(db, FAISS):
         documents = [v for k, v in db.docstore._dict.items()]
     elif isinstance(db, Chroma):
@@ -1712,7 +1713,7 @@ def get_docs_and_meta(db, top_k_docs, filter_kwargs={}):
 
 
 def _get_docs_and_meta(db, top_k_docs, filter_kwargs={}):
-    from langchain.vectorstores import FAISS
+    from langchain_community.vectorstores import FAISS
     if isinstance(db, Chroma):
         db_get = db._collection.get(where=filter_kwargs.get('filter'))
         db_metadatas = db_get['metadatas']
