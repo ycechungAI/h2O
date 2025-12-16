@@ -2,8 +2,8 @@ from typing import Any, Dict, List, Union, Optional
 import time
 import queue
 
-from langchain.callbacks.base import BaseCallbackHandler
-from langchain.schema import LLMResult
+from langchain_core.callbacks.base import BaseCallbackHandler
+from langchain_core.outputs import LLMResult
 
 
 class StreamingGradioCallbackHandler(BaseCallbackHandler):

@@ -2,7 +2,7 @@ import inspect
 import os
 from functools import partial
 from typing import Dict, Any, Optional, List
-from langchain.callbacks.manager import CallbackManagerForLLMRun
+from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from pydantic import root_validator
 from langchain.llms import gpt4all
 from dotenv import dotenv_values
